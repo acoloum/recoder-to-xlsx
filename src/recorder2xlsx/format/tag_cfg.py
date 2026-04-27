@@ -35,6 +35,8 @@ def parse_tag_cfg(path: Path) -> list[Channel]:
     for i in range(CHANNEL_COUNT):
         off = CH0_OFFSET + i * STRIDE
         rec = data[off:off + STRIDE]
+        if len(rec) < STRIDE:
+            raise RecorderFormatError(f"TagCfg.bin 第 {i} 通道資料不完整（檔案過短）")
         name = _read_utf16z(rec, NAME_OFFSET, NAME_MAX)
         unit = _read_utf16z(rec, UNIT_OFFSET, UNIT_MAX)
         range_low = struct.unpack_from('<d', rec, RANGE_LOW_OFFSET)[0]

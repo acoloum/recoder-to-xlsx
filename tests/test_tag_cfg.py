@@ -16,10 +16,10 @@ def test_sample_18_channels(sample_folder: Path) -> None:
         assert ch.range_high == pytest.approx(1370.0)
 
 
-def test_channel_fields(sample_folder: Path) -> None:
+def test_last_channel_fields(sample_folder: Path) -> None:
     channels = parse_tag_cfg(sample_folder / "TagCfg.bin")
-    ch = channels[0]
-    assert ch.name == "AI1"
+    ch = channels[17]
+    assert ch.name == "AI18"
     assert ch.unit == "°C"
     assert ch.range_low == pytest.approx(-270.0, abs=0.01)
     assert ch.range_high == pytest.approx(1370.0, abs=0.01)
