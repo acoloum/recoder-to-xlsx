@@ -28,6 +28,7 @@ def test_disconnect_status_p3(sample_folder: Path) -> None:
     day_dir = sample_folder / "DataStore" / "BatchDataLog" / "DataLog" / "20260424"
     samples = parse_day(day_dir, channel=3)
     assert samples[0].status == "斷線"
+    assert samples[0].value == 0.0
 
 
 def test_full_day_count(sample_folder: Path) -> None:
@@ -43,6 +44,7 @@ def test_disconnect_day(sample_folder: Path) -> None:
     samples = parse_day(day_dir, channel=0)
     assert len(samples) == 21
     assert all(s.status == "斷線" for s in samples)
+    assert all(s.value == 0.0 for s in samples)
 
 
 def test_missing_files_raises(tmp_path: Path) -> None:
