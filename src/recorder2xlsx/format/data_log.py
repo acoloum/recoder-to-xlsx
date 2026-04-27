@@ -74,19 +74,25 @@ def parse_day(day_dir: Path, channel: int) -> list[Sample]:
             entries.append((ft, dat_off, count))
         entry_off += IDX_ENTRY_SIZE
 
+    ONE_SECOND = timedelta(seconds=1)
+
     # ── 依每個 entry 解析對應 dat 資料 ──
     for ft, dat_off, count in entries:
+        # 限制不超出 dat 邊界
+        available = (len(dat) - dat_off) // 2
+        n = min(count, available)
+        if n <= 0:
+            continue
         t0 = _ft_to_dt(ft)
-        for i in range(count):
-            byte_off = dat_off + i * 2
-            if byte_off + 2 > len(dat):
-                break  # dat 資料不足，提前結束
-            raw = struct.unpack_from("<H", dat, byte_off)[0]
-            ts = t0 + timedelta(seconds=i)
+        # 批次解包整個 entry 的所有 raw 值，避免逐筆呼叫 struct.unpack_from
+        raws = struct.unpack_from(f"<{n}H", dat, dat_off)
+        ts = t0
+        for raw in raws:
             if raw == DISCONNECT:
                 samples.append(Sample(timestamp=ts, value=0.0, status="斷線"))
             else:
                 samples.append(Sample(timestamp=ts, value=raw / 10.0, status="ok"))
+            ts += ONE_SECOND
 
     return samples
 

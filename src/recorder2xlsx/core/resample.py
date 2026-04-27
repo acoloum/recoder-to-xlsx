@@ -22,7 +22,6 @@ def resample(
         start = start or min(all_times)
         end = end or max(all_times)
 
-    # 推估原始間隔（取首通道前兩筆差）
     first_ch = next((ch for ch in selected if len(samples.get(ch, [])) >= 2), None)
     if first_ch is None:
         original_interval = opts.interval_seconds
@@ -32,6 +31,10 @@ def resample(
 
     tolerance = timedelta(seconds=min(original_interval, opts.interval_seconds) / 2)
 
+    # 每通道的 timestamp 清單只建一次，避免在每次 _pick 呼叫時重建
+    ch_data = {ch: samples.get(ch, []) for ch in selected}
+    ch_timestamps = {ch: [s.timestamp for s in ch_data[ch]] for ch in selected}
+
     rows: list[ResampledRow] = []
     step = timedelta(seconds=opts.interval_seconds)
     t = start
@@ -39,7 +42,7 @@ def resample(
         row_values: list[str] = []
         any_data = False
         for ch in selected:
-            value = _pick(samples.get(ch, []), t, tolerance)
+            value = _pick(ch_data[ch], ch_timestamps[ch], t, tolerance)
             if value is None:
                 row_values.append("")
             else:
@@ -53,11 +56,15 @@ def resample(
     return rows
 
 
-def _pick(samples: list[Sample], target: datetime, tolerance: timedelta) -> str | None:
+def _pick(
+    samples: list[Sample],
+    timestamps: list[datetime],
+    target: datetime,
+    tolerance: timedelta,
+) -> str | None:
     """找最接近 target 的樣本；若距離 > tolerance 則回傳 None。"""
     if not samples:
         return None
-    timestamps = [s.timestamp for s in samples]
     i = bisect_left(timestamps, target)
     candidates = []
     if i < len(samples):
