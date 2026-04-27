@@ -75,9 +75,20 @@ class MainWindow(QMainWindow):
         self._toggle_range(True)
 
         # 通道
+        ch_layout = QVBoxLayout()
         self.channel_list = QListWidget()
         self.channel_list.setSelectionMode(QListWidget.MultiSelection)
-        form.addRow("選擇通道", self.channel_list)
+        ch_btn_layout = QHBoxLayout()
+        select_all_btn = QPushButton("全選")
+        select_all_btn.clicked.connect(self.channel_list.selectAll)
+        deselect_all_btn = QPushButton("取消全選")
+        deselect_all_btn.clicked.connect(self.channel_list.clearSelection)
+        ch_btn_layout.addWidget(select_all_btn)
+        ch_btn_layout.addWidget(deselect_all_btn)
+        ch_btn_layout.addStretch()
+        ch_layout.addLayout(ch_btn_layout)
+        ch_layout.addWidget(self.channel_list)
+        form.addRow("選擇通道", ch_layout)
 
         # 間隔
         self.interval_spin = QSpinBox()
