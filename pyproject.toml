@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "祿將 DR2018 無紙紀錄器資料夾轉 .xlsx 工具"
 requires-python = ">=3.12"
 dependencies = [
-    "PySide6>=6.7",
+    "PyQt5>=5.15",
     "openpyxl>=3.1",
 ]
 

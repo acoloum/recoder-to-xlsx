@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication
 
 from .gui.main_window import MainWindow
 

@@ -1,10 +1,10 @@
-"""PySide6 主視窗。"""
+"""PyQt5 主視窗。"""
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
     QCheckBox,
     QDateTimeEdit,
     QFileDialog,
@@ -173,8 +173,8 @@ class MainWindow(QMainWindow):
             input_folder=Path(self.input_edit.text()),
             output_path=Path(self.output_edit.text()),
             interval_seconds=self.interval_spin.value(),
-            start=None if full else self.start_edit.dateTime().toPython(),
-            end=None if full else self.end_edit.dateTime().toPython(),
+            start=None if full else self.start_edit.dateTime().toPyDateTime(),
+            end=None if full else self.end_edit.dateTime().toPyDateTime(),
             selected_channels=selected,
             show_blanks=self.blanks_cb.isChecked(),
             include_events=self.events_cb.isChecked(),

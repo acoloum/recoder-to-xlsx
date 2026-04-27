@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Signal
+from PyQt5.QtCore import QThread, pyqtSignal as Signal
 
 from ..core.models import ResampleOptions
 from ..core.recorder import load_recorder
