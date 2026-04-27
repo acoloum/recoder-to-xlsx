@@ -1,0 +1,29 @@
+[project]
+name = "recorder2xlsx"
+version = "0.1.0"
+description = "祿將 DR2018 無紙紀錄器資料夾轉 .xlsx 工具"
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.7",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+recorder2xlsx = "recorder2xlsx.main:main"
+recorder2xlsx-cli = "recorder2xlsx.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
