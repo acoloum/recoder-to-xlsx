@@ -24,8 +24,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..core.recorder import load_recorder
-from .worker import ConvertJob, ConvertWorker
+from .worker import ConvertJob, ConvertWorker, LoadMetadataWorker
 
 
 class MainWindow(QMainWindow):
@@ -34,6 +33,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("無紙紀錄器轉檔程式")
         self.resize(720, 600)
         self._worker: ConvertWorker | None = None
+        self._loader: LoadMetadataWorker | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
         d = QFileDialog.getExistingDirectory(self, "選擇紀錄器資料夾")
         if d:
             self.input_edit.setText(d)
-            self._load_metadata(Path(d))
+            self._start_load_metadata(Path(d))
 
     def _choose_output(self) -> None:
         f, _ = QFileDialog.getSaveFileName(self, "輸出 .xlsx", "", "Excel (*.xlsx)")
@@ -140,13 +140,19 @@ class MainWindow(QMainWindow):
                 f += ".xlsx"
             self.output_edit.setText(f)
 
-    def _load_metadata(self, folder: Path) -> None:
-        try:
-            data = load_recorder(folder)
-        except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "錯誤", f"無法讀取資料夾：{exc}")
+    def _start_load_metadata(self, folder: Path) -> None:
+        """在背景執行緒載入 metadata，避免 GUI 凍結。"""
+        if self._loader is not None and self._loader.isRunning():
             return
+        self.run_btn.setEnabled(False)
+        self.statusBar().showMessage("正在讀取資料夾…")
+        self._loader = LoadMetadataWorker(folder)
+        self._loader.finished_ok.connect(lambda data: self._on_metadata_loaded(folder, data))
+        self._loader.failed.connect(self._on_metadata_failed)
+        self._loader.start()
 
+    def _on_metadata_loaded(self, folder: Path, data: object) -> None:
+        self.run_btn.setEnabled(True)
         self.channel_list.clear()
         for ch in data.channels:
             item = QListWidgetItem(ch.name)
@@ -162,6 +168,10 @@ class MainWindow(QMainWindow):
             self.output_edit.setText(str(folder.parent / f"{folder.name}.xlsx"))
 
         self.statusBar().showMessage(f"已載入 {len(data.channels)} 通道")
+
+    def _on_metadata_failed(self, msg: str) -> None:
+        self.run_btn.setEnabled(True)
+        QMessageBox.critical(self, "錯誤", f"無法讀取資料夾：{msg}")
 
     def _run(self) -> None:
         if self._worker is not None and self._worker.isRunning():

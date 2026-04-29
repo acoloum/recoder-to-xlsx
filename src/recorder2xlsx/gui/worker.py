@@ -1,4 +1,4 @@
-"""背景轉檔 worker（QThread），避免 GUI 凍結。"""
+"""背景 worker（QThread），避免 GUI 凍結。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,10 +7,28 @@ from pathlib import Path
 
 from PyQt5.QtCore import QThread, pyqtSignal as Signal
 
-from ..core.models import ResampleOptions
+from ..core.models import RecorderData, ResampleOptions
 from ..core.recorder import load_recorder
 from ..core.resample import resample
 from ..core.xlsx_writer import write_xlsx
+
+
+class LoadMetadataWorker(QThread):
+    """背景載入資料夾 metadata（通道清單、時間範圍），避免主執行緒凍結。"""
+
+    finished_ok = Signal(object)   # RecorderData
+    failed = Signal(str)
+
+    def __init__(self, folder: Path) -> None:
+        super().__init__()
+        self.folder = folder
+
+    def run(self) -> None:
+        try:
+            data = load_recorder(self.folder)
+            self.finished_ok.emit(data)
+        except Exception as exc:  # noqa: BLE001
+            self.failed.emit(str(exc))
 
 
 @dataclass
