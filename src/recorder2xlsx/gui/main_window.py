@@ -147,6 +147,7 @@ class MainWindow(QMainWindow):
         self.run_btn.setEnabled(False)
         self.statusBar().showMessage("正在讀取資料夾…")
         self._loader = LoadMetadataWorker(folder)
+        self._loader.progress.connect(self.statusBar().showMessage)
         self._loader.finished_ok.connect(lambda data: self._on_metadata_loaded(folder, data))
         self._loader.failed.connect(self._on_metadata_failed)
         self._loader.start()

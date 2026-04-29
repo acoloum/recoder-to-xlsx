@@ -16,6 +16,7 @@ from ..core.xlsx_writer import write_xlsx
 class LoadMetadataWorker(QThread):
     """背景載入資料夾 metadata（通道清單、時間範圍），避免主執行緒凍結。"""
 
+    progress = Signal(str)         # 進度說明文字
     finished_ok = Signal(object)   # RecorderData
     failed = Signal(str)
 
@@ -25,7 +26,7 @@ class LoadMetadataWorker(QThread):
 
     def run(self) -> None:
         try:
-            data = load_recorder(self.folder)
+            data = load_recorder(self.folder, progress_cb=self.progress.emit)
             self.finished_ok.emit(data)
         except Exception as exc:  # noqa: BLE001
             self.failed.emit(str(exc))
