@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from ..format.alarm_log import parse_alarm_log
@@ -51,32 +51,24 @@ def load_recorder(
 
     samples: dict[int, list[Sample]] = {i: [] for i in range(len(channels))}
 
-    # 以執行緒平行解析所有（日期 × 通道）組合，每完成一天更新進度
-    tasks = [(day_dir, pen_idx, ch_idx) for day_dir in day_dirs for pen_idx, ch_idx in valid_pens]
-    total_tasks = len(tasks)
+    # 逐天提交平行任務，每天完成後立即收集結果並更新進度。
+    # 採用「逐天 submit + 收齊後才進下一天」而非 as_completed，
+    # 確保 samples 按日期順序累積，不需事後排序。
+    pens_per_day = len(valid_pens)
+    total_tasks = total_days * pens_per_day
     done_count = 0
-    # 追蹤每個 future 對應的日期名稱，用來計算已完成天數
-    day_done: dict[str, int] = {}  # day_name → 已完成的 pen 數量
-    pens_per_day = len(valid_pens) if valid_pens else 1
 
     with ThreadPoolExecutor() as executor:
-        future_to_day = {
-            executor.submit(_load_day_channel, day_dir, pen_idx, ch_idx): day_dir.name
-            for day_dir, pen_idx, ch_idx in tasks
-        }
-        for future in as_completed(future_to_day):
-            ch_idx, day_samples = future.result()
-            samples[ch_idx].extend(day_samples)
-
-            day_name = future_to_day[future]
-            day_done[day_name] = day_done.get(day_name, 0) + 1
-            days_finished = sum(1 for v in day_done.values() if v >= pens_per_day)
-            done_count += 1
-            _report(f"讀取資料中… 第 {days_finished}/{total_days} 天（{done_count}/{total_tasks} 筆）")
-
-    _report("排序中…")
-    for ch_idx in samples:
-        samples[ch_idx].sort(key=lambda s: s.timestamp)
+        for day_idx, day_dir in enumerate(day_dirs, start=1):
+            futures = [
+                executor.submit(_load_day_channel, day_dir, pen_idx, ch_idx)
+                for pen_idx, ch_idx in valid_pens
+            ]
+            for future in futures:
+                ch_idx, day_samples = future.result()
+                samples[ch_idx].extend(day_samples)
+                done_count += 1
+            _report(f"讀取資料中… 第 {day_idx}/{total_days} 天（{done_count}/{total_tasks} 筆）")
 
     _report("讀取事件記錄…")
     events = parse_alarm_log(
